@@ -2,6 +2,7 @@
   "name": "LiftKey - Smart Elevator NFC Merger",
   "description": "A sophisticated utility to scan multiple RFID/NFC elevator cards, merge their permissions, and manage your digital access tokens in one secure vault.",
   "requestFramePermissions": [
-    "camera"
+    "camera",
+    "microphone"
   ]
 }
