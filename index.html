@@ -11,7 +11,10 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="LiftKey">
     <meta name="mobile-web-app-capable" content="yes">
+    
+    <!-- İkonlar (Vercel'de çalışması için mutlak yol veya CDN kullanılmalı) -->
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/5712/5712613.png">
+    <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/5712/5712613.png">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#0f172a">
 
@@ -24,7 +27,6 @@
         color: #f8fafc;
         -webkit-tap-highlight-color: transparent;
         overscroll-behavior-y: none;
-        user-select: none;
         /* iOS Safe Area Padding */
         padding-top: env(safe-area-inset-top);
         padding-bottom: env(safe-area-inset-bottom);
@@ -49,15 +51,6 @@
         border: 2px solid #3b82f6;
         animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
       }
-      /* Cihaz Çentiği (Notch) ve Alt Bar Düzenlemesi */
-      @supports (padding: env(safe-area-inset-top)) {
-        header {
-          padding-top: calc(0.5rem + env(safe-area-inset-top));
-        }
-        nav {
-          padding-bottom: calc(1.5rem + env(safe-area-inset-bottom));
-        }
-      }
     </style>
   <script type="importmap">
 {
@@ -76,9 +69,9 @@
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('./sw.js', { scope: './' })
-            .then(reg => console.log('SW registered', reg))
-            .catch(err => console.error('SW registration failed', err));
+          navigator.serviceWorker.register('./sw.js')
+            .then(reg => console.log('SW Kaydedildi', reg))
+            .catch(err => console.error('SW Hatası', err));
         });
       }
     </script>

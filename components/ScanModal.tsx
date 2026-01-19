@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { X, Smartphone, Wifi, CheckCircle2, AlertTriangle, Keyboard, Fingerprint, ExternalLink, HelpCircle, Copy } from 'lucide-react';
+import { X, Smartphone, CheckCircle2, Keyboard, HelpCircle, Copy, Info } from 'lucide-react';
 import { NFCCard } from '../types';
 
 interface ScanModalProps {
@@ -19,17 +19,24 @@ const ScanModal: React.FC<ScanModalProps> = ({ isOpen, onClose, onCardDetected }
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const uidFromUrl = params.get('uid');
-    
-    if (isOpen && uidFromUrl) {
-      setDetectedData(uidFromUrl);
-      setStatus('detected');
-    } else if (isOpen) {
-      if (isIOS) setStatus('ios-help');
-      else startNfc();
-    } else {
-      setStatus('idle');
+    // URL parametrelerini kontrol et
+    const checkUrlParams = () => {
+      const params = new URLSearchParams(window.location.search);
+      const uidFromUrl = params.get('uid');
+      if (uidFromUrl && isOpen) {
+        setDetectedData(uidFromUrl);
+        setStatus('detected');
+        // URL'yi temizle (PWA'da tekrar açıldığında aynı kartı eklemesin)
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+    };
+
+    if (isOpen) {
+      checkUrlParams();
+      if (!detectedData) {
+        if (isIOS) setStatus('ios-help');
+        else startNfc();
+      }
     }
   }, [isOpen]);
 
@@ -43,7 +50,7 @@ const ScanModal: React.FC<ScanModalProps> = ({ isOpen, onClose, onCardDetected }
       const reader = new (window as any).NDEFReader();
       await reader.scan();
       reader.addEventListener("reading", ({ serialNumber }: any) => {
-        setDetectedData(serialNumber || "04:XX:XX:XX");
+        setDetectedData(serialNumber);
         setStatus('detected');
         if (navigator.vibrate) navigator.vibrate(200);
       });
@@ -65,55 +72,61 @@ const ScanModal: React.FC<ScanModalProps> = ({ isOpen, onClose, onCardDetected }
       type: 'new'
     });
     onClose();
+    setDetectedData(null);
+    setManualUID('');
+    setFormName('');
+    setFormFloors('');
   };
 
   const copyShortcutUrl = () => {
-    const url = `${window.location.origin}${window.location.pathname}?uid=`;
+    // Vercel linkini mutlak olarak oluştur
+    const baseUrl = "https://liftkey.vercel.app/";
+    const url = `${baseUrl}?uid=`;
     navigator.clipboard.writeText(url);
-    alert("Köprü URL kopyalandı! Kestirmeler uygulamasında 'URL' kısmına yapıştırın.");
+    alert("URL kopyalandı! Kestirmeler uygulamasındaki URL alanına yapıştırın.");
   };
 
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-xl">
-      <div className="relative w-full max-w-sm glass rounded-[44px] overflow-hidden shadow-2xl border-white/10">
+      <div className="relative w-full max-w-sm glass rounded-[44px] overflow-hidden shadow-2xl border-white/10 animate-in zoom-in duration-300">
         <button onClick={onClose} className="absolute top-6 right-6 p-2 text-slate-400 bg-slate-800/50 rounded-full"><X size={20}/></button>
 
         <div className="p-8 pt-12 flex flex-col items-center">
           {status === 'ios-help' && (
-            <div className="space-y-6 w-full animate-in zoom-in duration-300">
+            <div className="space-y-6 w-full">
               <div className="text-center">
                 <div className="w-16 h-16 bg-blue-500/10 text-blue-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
                   <HelpCircle size={32} />
                 </div>
-                <h2 className="text-xl font-black mb-2 uppercase">iOS NFC KÖPRÜSÜ</h2>
-                <p className="text-[11px] text-slate-500 font-bold leading-relaxed uppercase tracking-tighter">
-                  Apple, Safari'nin doğrudan NFC okumasına izin vermez. Veriyi aktarmak için "Kestirmeler" köprüsü kurmalısınız.
+                <h2 className="text-xl font-black mb-2 uppercase italic tracking-tighter">IPHONE KÖPRÜSÜ</h2>
+                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest leading-relaxed">
+                  Apple kısıtlamalarını aşmak için Kestirmeler uygulamasını kullanmalısınız.
                 </p>
               </div>
 
-              <div className="space-y-3">
-                <div className="p-4 bg-slate-900 rounded-2xl border border-slate-800">
-                  <p className="text-[10px] font-black text-blue-400 mb-1 uppercase tracking-widest">Adım 1</p>
-                  <p className="text-xs text-slate-300">Kestirmeler uygulamasını açın ve "NFC Otomasyonu" oluşturun.</p>
+              <div className="space-y-2">
+                <div className="flex gap-3 p-3 bg-slate-900 rounded-xl border border-slate-800">
+                  <span className="w-6 h-6 rounded-full bg-blue-600 text-[10px] font-black flex items-center justify-center shrink-0">1</span>
+                  <p className="text-[11px] text-slate-300"><b>Kestirmeler</b> uygulamasını açın.</p>
                 </div>
-                <div className="p-4 bg-slate-900 rounded-2xl border border-slate-800">
-                  <p className="text-[10px] font-black text-blue-400 mb-1 uppercase tracking-widest">Adım 2</p>
-                  <p className="text-xs text-slate-300">Eylem olarak "URL Aç" seçin ve aşağıdaki linki yapıştırın.</p>
+                <div className="flex gap-3 p-3 bg-slate-900 rounded-xl border border-slate-800">
+                  <span className="w-6 h-6 rounded-full bg-blue-600 text-[10px] font-black flex items-center justify-center shrink-0">2</span>
+                  <p className="text-[11px] text-slate-300">NFC okunduğunda <b>URL Aç</b> eylemiyle aşağıdaki linki çağırın.</p>
                 </div>
               </div>
 
               <button 
                 onClick={copyShortcutUrl}
-                className="w-full bg-slate-800 py-4 rounded-2xl text-xs font-black flex items-center justify-center gap-2 border border-slate-700 active:scale-95 transition-all"
+                className="w-full bg-blue-600 py-4 rounded-2xl text-xs font-black flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20 active:scale-95 transition-all"
               >
-                <Copy size={16} /> KÖPRÜ URL'SİNİ KOPYALA
+                <Copy size={16} /> KÖPRÜ LİNKİNİ KOPYALA
               </button>
 
               <button 
                 onClick={() => setStatus('manual')}
-                className="w-full text-blue-400 text-[10px] font-black uppercase tracking-[0.2em] py-2"
+                className="w-full text-slate-500 text-[10px] font-black uppercase tracking-[0.2em] py-2"
               >
                 Veya Manuel Giriş Yap
               </button>
@@ -134,37 +147,46 @@ const ScanModal: React.FC<ScanModalProps> = ({ isOpen, onClose, onCardDetected }
           )}
 
           {(status === 'manual' || status === 'detected') && (
-            <div className="w-full space-y-4 animate-in fade-in duration-500">
+            <div className="w-full space-y-4">
               <div className="flex flex-col items-center mb-6">
-                <div className="w-16 h-16 bg-blue-500/10 text-blue-500 rounded-2xl flex items-center justify-center mb-4">
+                <div className="w-16 h-16 bg-emerald-500/10 text-emerald-500 rounded-2xl flex items-center justify-center mb-4">
                   {status === 'detected' ? <CheckCircle2 size={32} /> : <Keyboard size={32} />}
                 </div>
-                <h2 className="text-xl font-black uppercase">{status === 'detected' ? 'KART HAZIR' : 'MANUEL GİRİŞ'}</h2>
+                <h2 className="text-xl font-black uppercase tracking-tighter italic">{status === 'detected' ? 'KART HAZIR' : 'BİLGİ GİRİŞİ'}</h2>
               </div>
 
               <div className="space-y-3">
-                <input 
-                  type="text" placeholder="Kart UID (Örn: 04:A1:B2...)" 
-                  value={detectedData || manualUID} onChange={e => setManualUID(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-800 rounded-2xl px-5 py-4 focus:ring-2 focus:ring-blue-500 outline-none font-mono text-sm uppercase text-blue-400"
-                />
-                <input 
-                  type="text" placeholder="Kart İsmi" 
-                  value={formName} onChange={e => setFormName(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-800 rounded-2xl px-5 py-4 focus:ring-2 focus:ring-blue-500 outline-none text-sm font-bold"
-                />
-                <input 
-                  type="text" placeholder="Katlar (Örn: 1, 3, 5)" 
-                  value={formFloors} onChange={e => setFormFloors(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-800 rounded-2xl px-5 py-4 focus:ring-2 focus:ring-blue-500 outline-none text-sm font-bold"
-                />
+                <div className="group">
+                  <label className="text-[9px] font-black text-slate-500 uppercase ml-1 mb-1 block">KİMLİK (UID)</label>
+                  <input 
+                    type="text" placeholder="Örn: 04:A1:B2..." 
+                    value={detectedData || manualUID} onChange={e => setManualUID(e.target.value)}
+                    className="w-full bg-slate-900 border border-slate-800 rounded-2xl px-5 py-4 outline-none font-mono text-sm uppercase text-blue-400 focus:border-blue-500 transition-all shadow-inner"
+                  />
+                </div>
+                <div className="group">
+                  <label className="text-[9px] font-black text-slate-500 uppercase ml-1 mb-1 block">ETİKET</label>
+                  <input 
+                    type="text" placeholder="Örn: Ofis Kartı" 
+                    value={formName} onChange={e => setFormName(e.target.value)}
+                    className="w-full bg-slate-900 border border-slate-800 rounded-2xl px-5 py-4 outline-none text-sm font-bold focus:border-blue-500 transition-all shadow-inner"
+                  />
+                </div>
+                <div className="group">
+                  <label className="text-[9px] font-black text-slate-500 uppercase ml-1 mb-1 block">KAT NUMARALARI</label>
+                  <input 
+                    type="text" placeholder="Örn: 1, 3, 5" 
+                    value={formFloors} onChange={e => setFormFloors(e.target.value)}
+                    className="w-full bg-slate-900 border border-slate-800 rounded-2xl px-5 py-4 outline-none text-sm font-bold focus:border-blue-500 transition-all shadow-inner"
+                  />
+                </div>
               </div>
 
               <button 
                 onClick={handleSave}
-                className="w-full bg-blue-600 text-white py-5 rounded-[24px] font-black text-sm shadow-xl shadow-blue-500/20 active:scale-95 transition-all mt-4"
+                className="w-full bg-blue-600 text-white py-5 rounded-[24px] font-black text-sm shadow-xl shadow-blue-500/20 active:scale-95 transition-all mt-4 italic tracking-widest"
               >
-                KAYDET VE KASAYA EKLE
+                SİSTEME KAYDET
               </button>
             </div>
           )}
