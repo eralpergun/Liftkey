@@ -12,7 +12,7 @@
     <meta name="apple-mobile-web-app-title" content="LiftKey">
     <meta name="mobile-web-app-capable" content="yes">
     
-    <!-- İkonlar (Vercel'de çalışması için mutlak yol veya CDN kullanılmalı) -->
+    <!-- İkonlar -->
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/5712/5712613.png">
     <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/5712/5712613.png">
     <link rel="manifest" href="manifest.json">
@@ -27,7 +27,6 @@
         color: #f8fafc;
         -webkit-tap-highlight-color: transparent;
         overscroll-behavior-y: none;
-        /* iOS Safe Area Padding */
         padding-top: env(safe-area-inset-top);
         padding-bottom: env(safe-area-inset-bottom);
       }
@@ -67,11 +66,22 @@
     <div id="root"></div>
     <script type="module" src="index.tsx"></script>
     <script>
+      // Service Worker kaydını sadece güvenli ve uygun ortamlarda başlat
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('./sw.js')
-            .then(reg => console.log('SW Kaydedildi', reg))
-            .catch(err => console.error('SW Hatası', err));
+          // Sandbox ortamlarında (preview gibi) SW kaydı cross-origin hatası verir.
+          // Sadece kendi domainimizde (vercel veya localhost) çalıştırıyoruz.
+          const isVercel = window.location.hostname.endsWith('vercel.app');
+          const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+          const isSandbox = window.location.origin.includes('goog') || window.location.origin.includes('ai.studio');
+
+          if ((isVercel || isLocal) && !isSandbox) {
+            navigator.serviceWorker.register('./sw.js')
+              .then(reg => console.log('LiftKey SW: Kaydedildi', reg.scope))
+              .catch(err => console.log('LiftKey SW: Kayıt atlandı (Ortam uyumsuz)'));
+          } else {
+            console.log('LiftKey: Önizleme ortamı algılandı, Service Worker devre dışı bırakıldı.');
+          }
         });
       }
     </script>

@@ -68,4 +68,88 @@ const App: React.FC = () => {
 
       <main className="flex-1 overflow-y-auto px-4 pb-32 pt-4">
         {activeTab === 'vault' ? (
-          <div className="space-y
+          <div className="space-y-4">
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="text-xl font-black flex items-center gap-2 tracking-tight">
+                <CreditCard className="text-blue-500" size={20} />
+                KART KASASI
+              </h2>
+            </div>
+
+            {cards.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16 text-center glass rounded-[40px] border-dashed border-2 border-slate-700/50">
+                <div className="w-24 h-24 bg-slate-800/30 rounded-full flex items-center justify-center mb-6 ring-8 ring-slate-900 animate-pulse">
+                  <SmartphoneIcon className="text-slate-600" size={40} />
+                </div>
+                <h3 className="text-slate-200 font-black text-lg">HİÇ KART YOK</h3>
+                <p className="text-[11px] text-slate-500 mt-2 max-w-[220px] leading-relaxed uppercase tracking-widest font-bold">
+                  Asansör kartlarınızı tarayın ve yetkileri birleştirin.
+                </p>
+              </div>
+            ) : (
+              <div className="grid gap-4">
+                {cards.map(card => (
+                  <CardItem 
+                    key={card.id} 
+                    card={card} 
+                    onDelete={() => removeCard(card.id)} 
+                    onSelect={() => toggleCardSelection(card.id)}
+                    onUse={() => setEmulatingCard(card)}
+                    isSelected={selectedCardsForMerge.includes(card.id)}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        ) : (
+          <MergeView 
+            cards={cards.filter(c => selectedCardsForMerge.includes(c.id))} 
+            onMerge={handleMerge}
+            onCancel={() => setActiveTab('vault')}
+          />
+        )}
+      </main>
+
+      <nav className="fixed bottom-0 left-0 right-0 max-w-md mx-auto px-6 py-8 bg-gradient-to-t from-slate-950 via-slate-950/95 to-transparent pointer-events-none z-40">
+        <div className="flex gap-3 pointer-events-auto">
+          {activeTab === 'vault' && (
+            <>
+              <button 
+                onClick={() => setIsScanModalOpen(true)}
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-5 rounded-[28px] font-black tracking-widest flex items-center justify-center gap-3 shadow-2xl shadow-blue-500/40 active:scale-95 transition-all text-sm"
+              >
+                <Smartphone size={24} strokeWidth={2.5} />
+                YENİ KART EKLE
+              </button>
+              {cards.length >= 2 && (
+                <button 
+                  onClick={() => setActiveTab('merge')}
+                  className={`p-5 rounded-[28px] font-bold flex items-center justify-center gap-2 transition-all shadow-xl ${
+                    selectedCardsForMerge.length >= 2 
+                    ? 'bg-purple-600 text-white shadow-purple-500/30 ring-2 ring-purple-400' 
+                    : 'bg-slate-800 text-slate-400 opacity-50'
+                  }`}
+                >
+                  <Layers size={24} />
+                </button>
+              )}
+            </>
+          )}
+        </div>
+      </nav>
+
+      <ScanModal 
+        isOpen={isScanModalOpen} 
+        onClose={() => setIsScanModalOpen(false)} 
+        onCardDetected={addCard} 
+      />
+
+      <EmulationView 
+        card={emulatingCard} 
+        onClose={() => setEmulatingCard(null)} 
+      />
+    </div>
+  );
+};
+
+export default App;
