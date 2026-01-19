@@ -20,6 +20,9 @@ const App: React.FC = () => {
   const [emulatingCard, setEmulatingCard] = useState<NFCCard | null>(null);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isInstalled, setIsInstalled] = useState(false);
+  const [showInstallGuide, setShowInstallGuide] = useState(() => {
+    return localStorage.getItem('liftkey_guide_dismissed') !== 'true';
+  });
 
   // URL'den NFC verisi gelmiş mi kontrol et (iOS Shortcut Bridge)
   useEffect(() => {
@@ -53,6 +56,11 @@ const App: React.FC = () => {
     if (outcome === 'accepted') setDeferredPrompt(null);
   };
 
+  const dismissGuide = () => {
+    setShowInstallGuide(false);
+    localStorage.setItem('liftkey_guide_dismissed', 'true');
+  };
+
   const addCard = (card: NFCCard) => {
     setCards(prev => [...prev, card]);
   };
@@ -66,7 +74,6 @@ const App: React.FC = () => {
     const newMergedCard: NFCCard = {
       id: crypto.randomUUID(),
       name,
-      // Birleşik kartın seri numarası, katların karmasından oluşur (benzersizlik için)
       serialNumber: "MK-" + floors.join('').slice(0, 8) + "-" + Math.random().toString(16).slice(2, 6).toUpperCase(),
       floors,
       createdAt: Date.now(),
@@ -185,8 +192,8 @@ const App: React.FC = () => {
         onClose={() => setEmulatingCard(null)} 
       />
 
-      {!isInstalled && /iPhone|iPad|iPod/.test(navigator.userAgent) && (
-        <PWAInstallGuide onClose={() => {}} />
+      {!isInstalled && showInstallGuide && /iPhone|iPad|iPod/.test(navigator.userAgent) && (
+        <PWAInstallGuide onClose={dismissGuide} />
       )}
     </div>
   );
